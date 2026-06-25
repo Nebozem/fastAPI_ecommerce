@@ -66,46 +66,6 @@ async def get_product(product_id: int, db: AsyncSession = Depends(get_async_db))
     return db_product
 
 
-@router.put("/{product_id}", response_model=ProductSchema)
-async def update_product(product_id: int, product: ProductCreate, db: AsyncSession = Depends(get_async_db)):
-    """
-    Обновляет товар по его ID.
-    """
-    stmt = select(ProductModel).where(ProductModel.id == product_id, ProductModel.is_active == True)
-    product_for_update = await db.scalars(stmt)
-    db_product_for_update = product_for_update.first()
-    if db_product_for_update is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found or inactive")
-
-    stmt_2 = select(CategoryModel).where(CategoryModel.id == product.category_id, CategoryModel.is_active == True)
-    category = await db.scalars(stmt_2)
-    db_category = category.first()
-    if db_category is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found or inactive")
-
-    await db.execute(update(ProductModel).where(ProductModel.id == product_id).values(**product.model_dump()))
-    await db.commit()
-    await db.refresh(db_product_for_update)
-
-    return db_product_for_update
-
-
-@router.delete("/{product_id}", status_code=status.HTTP_200_OK)
-async def delete_product(product_id: int, db: AsyncSession = Depends(get_async_db)):
-    """
-    Удаляет товар по его ID.
-    """
-    stmt = select(ProductModel).where(ProductModel.id == product_id, ProductModel.is_active == True)
-    product = await db.scalars(stmt)
-    db_product = product.first()
-    if db_product is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found or inactive")
-
-    await db.execute(update(ProductModel).where(ProductModel.id == product_id).values(is_active=False))
-    await db.commit()
-
-    return {"message": f"Товар {product_id} удалён"}
-
 @router.post("/", response_model=ProductSchema, status_code=status.HTTP_201_CREATED)
 async def create_product(
     product: ProductCreate,
